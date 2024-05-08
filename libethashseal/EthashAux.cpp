@@ -20,7 +20,7 @@
  */
 
 #include "EthashAux.h"
-#include <boost/detail/endian.hpp>
+#include <boost/endian.hpp>
 #include <boost/filesystem.hpp>
 #include <chrono>
 #include <array>
