@@ -218,3 +218,7 @@ libevmcore/.dirstamp
 libevmcore/.deps/
 utils/libscrypt/.dirstamp
 utils/libscrypt/.deps/
+
+*.Identifier
+*.Po
+.dirstamp

@@ -34,7 +34,7 @@
 
 namespace dev
 {
-
+	
 /// Base class for all exceptions.
 struct Exception: virtual std::exception, virtual boost::exception
 {
@@ -43,6 +43,14 @@ struct Exception: virtual std::exception, virtual boost::exception
 
 private:
 	std::string m_message;
+};
+
+struct FailedInvariant : public Exception {
+    FailedInvariant(const char* fn, const char* file, int line) 
+        : Exception(std::string("Invariant failed in function ") + fn + 
+                    " at " + file + ":" + std::to_string(line)) {}
+
+    FailedInvariant() : Exception("Invariant failed without details") {}
 };
 
 #define DEV_SIMPLE_EXCEPTION(X) struct X: virtual Exception { const char* what() const noexcept override { return #X; } }
@@ -63,7 +71,7 @@ DEV_SIMPLE_EXCEPTION(RootNotFound);
 struct BadRoot: virtual Exception { public: BadRoot(h256 const& _root): Exception("BadRoot " + _root.hex()), root(_root) {} h256 root; };
 DEV_SIMPLE_EXCEPTION(FileError);
 DEV_SIMPLE_EXCEPTION(Overflow);
-DEV_SIMPLE_EXCEPTION(FailedInvariant);
+//DEV_SIMPLE_EXCEPTION(FailedInvariant);
 DEV_SIMPLE_EXCEPTION(ValueTooLarge);
 
 struct InterfaceNotSupported: virtual Exception { public: InterfaceNotSupported(std::string _f): Exception("Interface " + _f + " not supported.") {} };
