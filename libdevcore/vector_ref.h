@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstring>
+#include <cstdint>
 #include <cassert>
 #include <type_traits>
 #include <vector>
