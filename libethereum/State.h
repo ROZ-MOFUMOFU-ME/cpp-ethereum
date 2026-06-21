@@ -190,8 +190,15 @@ public:
 	/// Copy state object.
 	State& operator=(State const& _s);
 
+	/// Default block-cache budget (in bytes) for the EVM state LevelDBs, used by
+	/// openDB() when no explicit size is supplied. Overridable per-node via the
+	/// -evmdbcache option (see AppInit2()).
+	static constexpr int64_t c_defaultEvmDbCacheBytes = 256 * 1024 * 1024;
+
 	/// Open a DB - useful for passing into the constructor & keeping for other states that are necessary.
-	static OverlayDB openDB(std::string const& _path, h256 const& _genesisHash, WithExisting _we = WithExisting::Trust);
+	/// @param _cacheSizeBytes total LevelDB cache budget: half is used as an LRU
+	/// block cache and a quarter as the write buffer (see State::openDB).
+	static OverlayDB openDB(std::string const& _path, h256 const& _genesisHash, WithExisting _we = WithExisting::Trust, int64_t _cacheSizeBytes = c_defaultEvmDbCacheBytes);
 	OverlayDB const& db() const { return m_db; }
 	OverlayDB& db() { return m_db; }
 
