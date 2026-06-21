@@ -21,6 +21,14 @@
 
 #include "State.h"
 
+#if ETH_ROCKSDB
+#include <rocksdb/cache.h>
+#include <rocksdb/filter_policy.h>
+#else
+#include <leveldb/cache.h>
+#include <leveldb/filter_policy.h>
+#endif
+
 #include <ctime>
 #include <boost/filesystem.hpp>
 #include <boost/timer.hpp>
@@ -71,7 +79,7 @@ State::State(State const& _s):
 	m_accountStartNonce(_s.m_accountStartNonce)
 {}
 
-OverlayDB State::openDB(std::string const& _basePath, h256 const& _genesisHash, WithExisting _we)
+OverlayDB State::openDB(std::string const& _basePath, h256 const& _genesisHash, WithExisting _we, int64_t _cacheSizeBytes)
 {
 	std::string path = _basePath.empty() ? Defaults::get()->m_dbPath : _basePath;
 
@@ -88,6 +96,24 @@ OverlayDB State::openDB(std::string const& _basePath, h256 const& _genesisHash, 
 	ldb::Options o;
 	o.max_open_files = 256;
 	o.create_if_missing = true;
+	// Performance tuning for the EVM state trie DB. The stock cpp-ethereum
+	// settings (an 8 MiB block cache and no bloom filter) leave initial block
+	// download I/O-bound on random trie-node reads. Mirror Bitcoin Core's
+	// CDBWrapper budgeting: half the cache as an LRU block cache, a quarter as
+	// the write buffer, plus a 10-bit bloom filter to cut random lookups.
+	//
+	// The cache and filter are shared by every EVM state DB (the account-state
+	// trie and the AAL/UTXO trie) and sized from the first openDB() call, which
+	// in node operation is the main state DB opened from AppInit2() honouring
+	// -evmdbcache. They live for the whole process and are intentionally never
+	// freed (the OS reclaims them at exit), so repeated opens cannot leak them.
+	if (_cacheSizeBytes < (8 << 20))
+		_cacheSizeBytes = 8 << 20;
+	static ldb::Cache* s_evmBlockCache = ldb::NewLRUCache(_cacheSizeBytes / 2);
+	static ldb::FilterPolicy const* s_evmFilterPolicy = ldb::NewBloomFilterPolicy(10);
+	o.block_cache = s_evmBlockCache;
+	o.filter_policy = s_evmFilterPolicy;
+	o.write_buffer_size = _cacheSizeBytes / 4;
 	ldb::DB* db = nullptr;
 	ldb::Status status = ldb::DB::Open(o, path + "/state", &db);
 	if (!status.ok() || !db)

@@ -51,6 +51,7 @@
 #include <boost/multiprecision/cpp_int.hpp>
 #pragma warning(pop)
 #pragma GCC diagnostic pop
+#include <boost/functional/hash.hpp> // for boost::hash_range (no longer pulled in transitively by newer Boost)
 #include "vector_ref.h"
 
 // CryptoPP defines byte in the global namespace, so must we.
